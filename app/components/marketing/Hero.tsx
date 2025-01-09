@@ -18,7 +18,7 @@ export const Hero = () => {
           </span>
         </h1>
         <p className="max-w-xl mx-auto mt-4 lg:text-lg text-muted-foreground">
-          Creating Invoices can be a hassle, but with InvoiceRBN 1.0, it's a
+          Creating Invoices can be a hassle, but with InvoiceRBN 1.0, it&apos;s a
           breeze. Our intuitive interface and powerful features make invoicing
           simple and efficient.
         </p>
