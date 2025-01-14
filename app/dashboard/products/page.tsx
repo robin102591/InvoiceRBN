@@ -1,4 +1,4 @@
-import { InvoiceList } from "@/app/components/InvoiceList";
+import { ProductList } from "@/app/components/ProductList";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,7 +12,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
-const InvoicesPage = async ({
+const ProductPage = async ({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -29,23 +29,23 @@ const InvoicesPage = async ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-bold">Invoices</CardTitle>
-            <CardDescription>Manage your invoices right here</CardDescription>
+            <CardTitle className="text-2xl font-bold">Products</CardTitle>
+            <CardDescription>Manage your products right here</CardDescription>
           </div>
           <Button asChild variant="default">
-            <Link href="/dashboard/invoices/create">
-              <Plus /> Create Invoice
+            <Link href="/dashboard/products/create">
+              <Plus /> Create Product
             </Link>
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         <Suspense fallback={<Skeleton className="w-full h-[500px]" />}>
-          <InvoiceList currentPage={currentPage} pageSize={pageLimit} />
+          <ProductList currentPage={currentPage} pageSize={pageLimit}/>
         </Suspense>
       </CardContent>
     </Card>
   );
 };
 
-export default InvoicesPage;
+export default ProductPage;

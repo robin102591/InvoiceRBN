@@ -2,7 +2,7 @@
 
 import { requireUser } from "./utils/hooks";
 import { parseWithZod } from "@conform-to/zod";
-import { invoiceSchema, onboardingSchema } from "./utils/zodSchemas";
+import { invoiceSchema, onboardingSchema, productSchema } from "./utils/zodSchemas";
 import prisma from "./utils/db";
 import { redirect } from "next/navigation";
 import { emailClient } from "./utils/mailtrap";
@@ -202,4 +202,69 @@ export const markAsPaid = async (invoiceId: string) => {
   });
 
   return redirect("/dashboard/invoices");
+}
+
+export const createProduct = async (prevState: any, formData: FormData) => {
+  const session = await requireUser();
+
+  const submission = parseWithZod(formData, {
+    schema: productSchema,
+  });
+
+  if (submission.status !== "success") {
+    return submission.reply();
+  }
+
+  const data = await prisma.product.create({
+    data: {
+      name: submission.value.productName,
+      description: submission.value.productDescription,
+      price: submission.value.price,
+      userId: session.user?.id,
+      unitOfMeasurement: submission.value.unitOfMeasurement
+    }
+  });
+
+  return redirect('/dashboard/products')
+}
+
+export const updateProduct = async (prevState: any, formData: FormData) => {
+  const session = await requireUser();
+
+  const submission = parseWithZod(formData, {
+    schema: productSchema,
+  });
+
+  if (submission.status !== "success") {
+    return submission.reply();
+  }
+
+  const data = await prisma.product.update({
+    where: {
+      id: formData.get('id') as string,
+      userId: session.user?.id
+    },
+    data: {
+      name: submission.value.productName,
+      description: submission.value.productDescription,
+      price: submission.value.price,
+      userId: session.user?.id,
+      unitOfMeasurement: submission.value.unitOfMeasurement
+    }
+  });
+
+  return redirect('/dashboard/products')
+}
+
+export const deleteProduct = async (productId: string) => {
+  const session = await requireUser();
+
+  const data = await prisma.product.delete({
+    where: {
+      id: productId,
+      userId: session.user?.id
+    }
+  });
+
+  return redirect("/dashboard/products");
 }

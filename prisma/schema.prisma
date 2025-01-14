@@ -27,6 +27,7 @@ model User {
   Authenticator Authenticator[]
 
   invoices Invoice[]
+  products Product[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -103,18 +104,63 @@ model Invoice {
   currency      String
   invoiceNumber String
   note          String?
+  invoiceItems  InvoiceItem[] // Relation to invoice items
 
   invoiceItemDescription String
   invoiceItemQuantity    Int
   invoiceItemRate        Int
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  User      User?    @relation(fields: [userId], references: [id])
-  userId    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  User       User?     @relation(fields: [userId], references: [id])
+  userId     String?
+  Customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String?
 }
 
 enum InvoiceStatus {
   PAID
   PENDING
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  quantity    Int
+  rate        Float
+  total       Float // Calculated as quantity * rate
+  description String? // Optional description for flexibility
+
+  invoiceId String
+  productId String
+
+  Invoice Invoice @relation(fields: [invoiceId], references: [id])
+  Product Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id                String        @id @default(uuid())
+  name              String
+  description       String?
+  price             Float
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  unitOfMeasurement String?
+  invoiceItems      InvoiceItem[] // Relation to invoice items
+  User              User?         @relation(fields: [userId], references: [id])
+  userId            String?
+}
+
+model Customer {
+  id       String    @id @default(uuid())
+  name     String
+  email    String
+  address  String
+  phone    String?
+  invoices Invoice[] // One-to-many relation with Invoice
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
