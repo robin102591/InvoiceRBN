@@ -2,7 +2,7 @@
 
 import { requireUser } from "./utils/hooks";
 import { parseWithZod } from "@conform-to/zod";
-import { invoiceSchema, onboardingSchema, productSchema } from "./utils/zodSchemas";
+import { customerSchema, invoiceSchema, onboardingSchema, productSchema } from "./utils/zodSchemas";
 import prisma from "./utils/db";
 import { redirect } from "next/navigation";
 import { emailClient } from "./utils/mailtrap";
@@ -267,4 +267,68 @@ export const deleteProduct = async (productId: string) => {
   });
 
   return redirect("/dashboard/products");
+}
+
+export const createCustomer = async (prevState: any, formData: FormData) => {
+  const session = await requireUser();
+
+  const submission = parseWithZod(formData, {
+    schema: customerSchema,
+  });
+
+  if (submission.status !== "success") {
+    return submission.reply();
+  }
+
+  const data = await prisma.customer.create({
+    data: {
+      name: submission.value.customerName,
+      email: submission.value.email,
+      address: submission.value.address ?? "",
+      phone: submission.value.phone,
+      userId: session.user?.id
+    }
+  });
+
+  return redirect('/dashboard/customers')
+}
+
+export const updateCustomer = async (prevState: any, formData: FormData) => {
+  const session = await requireUser();
+
+  const submission = parseWithZod(formData, {
+    schema: customerSchema,
+  });
+
+  if (submission.status !== "success") {
+    return submission.reply();
+  }
+
+  const data = await prisma.customer.update({
+    where: {
+      id: formData.get('id') as string,
+      userId: session.user?.id
+    },
+    data: {
+      name: submission.value.customerName,
+      email: submission.value.email,
+      address: submission.value.address ?? "",
+      phone: submission.value.phone
+    }
+  });
+
+  return redirect('/dashboard/customers')
+}
+
+export const deleteCustomer = async (customerId: string) => {
+  const session = await requireUser();
+
+  const data = await prisma.customer.delete({
+    where: {
+      id: customerId,
+      userId: session.user?.id
+    }
+  });
+
+  return redirect("/dashboard/customers");
 }

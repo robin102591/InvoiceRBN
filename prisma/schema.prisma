@@ -28,6 +28,7 @@ model User {
 
   invoices Invoice[]
   products Product[]
+  customers Customer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -160,6 +161,8 @@ model Customer {
   address  String
   phone    String?
   invoices Invoice[] // One-to-many relation with Invoice
+  User              User?         @relation(fields: [userId], references: [id])
+  userId            String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

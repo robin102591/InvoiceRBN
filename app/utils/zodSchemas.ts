@@ -1,11 +1,11 @@
-import {z} from 'zod'
+import { z } from 'zod'
 export const onboardingSchema = z.object({
     firstName: z.string().min(2, "First  name is required."),
     lastName: z.string().min(2, "Lastname is required."),
     address: z.string().min(2, "Address is required")
 })
 
-export const invoiceSchema = z.object({    
+export const invoiceSchema = z.object({
     invoiceName: z.string().min(2, "Invoice Name is required."),
     total: z.number().min(1, "Minimum of 1 peso"),
     status: z.enum(["PAID", "PENDING"]).default("PENDING"),
@@ -36,3 +36,10 @@ export const productSchema = z.object({
     price: z.number().min(1, "Price is required"),
     unitOfMeasurement: z.string().min(1, "Unit of Measurement required.")
 });
+
+export const customerSchema = z.object({
+    customerName: z.string().min(2, "Customer Name is required."),
+    email: z.string().email("Invalid email"),
+    address: z.string().optional(),
+    phone: z.string()
+})
