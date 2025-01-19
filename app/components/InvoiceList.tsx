@@ -28,12 +28,12 @@ const getData = async (
       },
       select: {
         id: true,
-        clientName: true,
         total: true,
         createdAt: true,
         status: true,
         invoiceNumber: true,
         currency: true,
+        Customer: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -92,7 +92,7 @@ export const InvoiceList = async ({
               {invoices.map((invoice: any) => (
                 <TableRow key={invoice.id}>
                   <TableCell>{invoice.invoiceNumber}</TableCell>
-                  <TableCell>{invoice.clientName}</TableCell>
+                  <TableCell>{invoice?.Customer?.name}</TableCell>
                   <TableCell>
                     {formatCurrency({
                       amount: invoice.total,

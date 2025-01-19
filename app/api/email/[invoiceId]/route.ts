@@ -20,6 +20,9 @@ export const POST = async (
         id: invoiceId,
         userId: session.user?.id,
       },
+      select: {
+        Customer: true
+      }
     });
 
     if (!invoiceData) {
@@ -40,7 +43,7 @@ export const POST = async (
       ],
       template_uuid: "ad1242f0-2a0a-4852-ac6e-944c1e0163b3",
       template_variables: {
-        first_name: invoiceData.clientName,
+        first_name: invoiceData.Customer?.name || "",
       },
     });
 

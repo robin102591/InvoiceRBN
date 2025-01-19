@@ -16,10 +16,6 @@ export const invoiceSchema = z.object({
     fromEmail: z.string().email("Invalid Email address"),
     fromAddress: z.string().min(1, "Your Address is required"),
 
-    clientName: z.string().min(1, "Client Name is required"),
-    clientEmail: z.string().email("Invalid Email address"),
-    clientAddress: z.string().min(1, "Client Address is required"),
-
     currency: z.string().min(1, "Currency is required"),
     invoiceNumber: z.string().min(1, "Minimum invoice number of 1"),
 
@@ -27,7 +23,8 @@ export const invoiceSchema = z.object({
 
     invoiceItemDescription: z.string().min(1, "Description is required"),
     invoiceItemQuantity: z.number().min(1, "Quatity min 1"),
-    invoiceItemRate: z.number().min(1, "Rate min 1")
+    invoiceItemRate: z.number().min(1, "Rate min 1"),
+    customerId: z.string().min(1, "Customer is required")
 })
 
 export const productSchema = z.object({

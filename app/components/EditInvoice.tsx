@@ -6,33 +6,35 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Prisma } from "@prisma/client";
+import { Customer, Prisma } from "@prisma/client";
 import { CalendarIcon } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { updateInvoice } from "../action";
 import { formatCurrency } from "../utils/formatCurrency";
 import { invoiceSchema } from "../utils/zodSchemas";
 import { SubmitButtons } from "./SubmitButtons";
+import { CustomerCombobox } from "./CustomerCombobox";
+import axios from "axios";
 
-interface EditInvoiceProps{
-    data: Prisma.InvoiceGetPayload<{}>;
+interface EditInvoiceProps {
+  data: Prisma.InvoiceGetPayload<{}>;
 }
 
-export const EditInvoice = ({data}: EditInvoiceProps) => {
+export const EditInvoice = ({ data }: EditInvoiceProps) => {
   const [lastResult, action] = useActionState(updateInvoice, undefined);
   const [form, fields] = useForm({
     lastResult,
@@ -44,24 +46,42 @@ export const EditInvoice = ({data}: EditInvoiceProps) => {
     shouldValidate: "onBlur",
     shouldRevalidate: "onInput",
   });
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    data.date
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(data.date);
   const [rate, setRate] = useState(data.invoiceItemRate.toString());
   const [quantity, setQuantity] = useState(data.invoiceItemQuantity.toString());
   const [currency, setCurrency] = useState(data.currency);
-
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const calculateTotal = (Number(rate) || 0) * (Number(quantity) || 0);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const response = await axios.get<Customer[]>("/api/customer");
+      setCustomers(response.data);
+    };
+
+    fetchCustomers();
+  }, []);
+
+  useEffect(() => {
+    if (customers.length > 0) {
+      const selected = customers.find((c) => c.id === data.customerId);
+      setSelectedCustomer(selected ?? null);
+      console.log(selected);
+    }
+  }, [customers, data.customerId]); // Runs whenever customers or customerId changes
+
+  const handleCustomerChange = (customer?: Customer | null) => {
+    setSelectedCustomer(customer ?? null);
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-6">
         <form action={action} id={form.id} onSubmit={form.onSubmit} noValidate>
-        <input
-            type="hidden"
-            name='id'
-            value={data.id}
-          />
+          <input type="hidden" name="id" value={data.id} />
           <input
             type="hidden"
             name={fields.date.name}
@@ -71,6 +91,11 @@ export const EditInvoice = ({data}: EditInvoiceProps) => {
             type="hidden"
             name={fields.total.name}
             value={calculateTotal}
+          />
+          <input
+            type="hidden"
+            name={fields.customerId.name}
+            value={selectedCustomer?.id}
           />
           <div className="flex flex-col gap-1 w-fit mb-6">
             <div className="flex items-center gap-4">
@@ -161,33 +186,25 @@ export const EditInvoice = ({data}: EditInvoiceProps) => {
             <div>
               <Label>To</Label>
               <div className="space-y-2">
-                <Input
-                  name={fields.clientName.name}
-                  key={fields.clientName.key}
-                  defaultValue={data.clientName}
-                  placeholder="Client Name"
+                <CustomerCombobox
+                  data={customers}
+                  onChange={handleCustomerChange}
+                  customer={selectedCustomer}
                 />
                 <p className="text-red-500 text-sm">
-                  {fields.clientName.errors}
+                  {fields.customerId.errors}
                 </p>
                 <Input
-                  name={fields.clientEmail.name}
-                  key={fields.clientEmail.key}
-                  defaultValue={data.clientEmail}
+                  name="email"
+                  defaultValue={selectedCustomer?.email ?? ""}
                   placeholder="Client Email"
                 />
-                <p className="text-red-500 text-sm">
-                  {fields.clientEmail.errors}
-                </p>
+
                 <Input
-                  name={fields.clientAddress.name}
-                  key={fields.clientAddress.key}
-                  defaultValue={data.clientAddress}
+                  name="address"
+                  defaultValue={selectedCustomer?.address ?? ""}
                   placeholder="Client Address"
                 />
-                <p className="text-red-500 text-sm">
-                  {fields.clientAddress.errors}
-                </p>
               </div>
             </div>
           </div>

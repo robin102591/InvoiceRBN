@@ -23,9 +23,7 @@ export const GET = async (
       fromName: true,
       fromEmail: true,
       fromAddress: true,
-      clientName: true,
-      clientEmail: true,
-      clientAddress: true,
+      Customer: true,
       date: true,
       dueDate: true,
       invoiceItemDescription: true,
@@ -61,7 +59,7 @@ export const GET = async (
   pdf.setFontSize(12);
   pdf.text("Bill to :", 20, 70);
   pdf.setFontSize(10);
-  pdf.text([data.clientName, data.clientEmail, data.clientAddress], 20, 75);
+  pdf.text([data.Customer?.name || '', data.Customer?.email || '', data.Customer?.address || ''], 20, 75);
 
   // Invoice Details
   pdf.setFontSize(10);
@@ -86,23 +84,23 @@ export const GET = async (
   pdf.setFont("helvetica", "normal")
   pdf.text(data.invoiceItemDescription, 20, 110)
   pdf.text(data.invoiceItemQuantity.toString(), 100, 110)
-  pdf.text(formatCurrency({amount: data.invoiceItemRate, currency: data.currency as any}), 130, 110)
-  pdf.text(formatCurrency({amount: data.total, currency: data.currency as any}), 160, 110)
+  pdf.text(formatCurrency({ amount: data.invoiceItemRate, currency: data.currency as any }), 130, 110)
+  pdf.text(formatCurrency({ amount: data.total, currency: data.currency as any }), 160, 110)
 
   //Total Section
-   // draw a line
-   pdf.line(20, 115, 190, 115)
-   pdf.setFont("helvetica", "bold")
-   pdf.text(`Total (${data.currency}) :`, 130, 130)
-   pdf.text(formatCurrency({amount: data.total, currency: data.currency as any}), 160, 130)
+  // draw a line
+  pdf.line(20, 115, 190, 115)
+  pdf.setFont("helvetica", "bold")
+  pdf.text(`Total (${data.currency}) :`, 130, 130)
+  pdf.text(formatCurrency({ amount: data.total, currency: data.currency as any }), 160, 130)
 
-   // Additional notes
-   if(data.note){
+  // Additional notes
+  if (data.note) {
     pdf.setFont("helvetica", "normal")
     pdf.setFontSize(10)
-    pdf.text(`Note:`,20, 150)
-    pdf.text(`${data.note}`,20, 155)
-   }
+    pdf.text(`Note:`, 20, 150)
+    pdf.text(`${data.note}`, 20, 155)
+  }
 
   // generate pdf as buffer
   const pdfBuffer = Buffer.from(pdf.output("arraybuffer"));

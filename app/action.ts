@@ -46,10 +46,6 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
 
   const data = await prisma.invoice.create({
     data: {
-      clientName: submission.value.clientName,
-      clientEmail: submission.value.clientEmail,
-      clientAddress: submission.value.clientAddress,
-
       fromName: submission.value.fromName,
       fromEmail: submission.value.fromEmail,
       fromAddress: submission.value.fromAddress,
@@ -69,7 +65,16 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
       total: submission.value.total,
       note: submission.value.note,
       userId: session.user?.id,
+      customerId: formData.get('customerId') as string,
     },
+    select: {
+      id: true,
+      Customer: true,
+      invoiceNumber: true,
+      date: true,
+      total: true,
+      currency: true
+    }
   });
 
   const sender = {
@@ -86,7 +91,7 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
     ],
     template_uuid: "087c5343-7f93-4768-9995-9f5175719432",
     template_variables: {
-      clientName: data.clientName,
+      clientName: data.Customer?.name ?? "",
       invoiceNumber: data.invoiceNumber,
       dueDate: new Intl.DateTimeFormat("en-PH", {
         dateStyle: "long",
@@ -119,10 +124,6 @@ export const updateInvoice = async (prevState: any, formData: FormData) => {
       userId: session.user?.id
     },
     data: {
-      clientName: submission.value.clientName,
-      clientEmail: submission.value.clientEmail,
-      clientAddress: submission.value.clientAddress,
-
       fromName: submission.value.fromName,
       fromEmail: submission.value.fromEmail,
       fromAddress: submission.value.fromAddress,
@@ -141,6 +142,15 @@ export const updateInvoice = async (prevState: any, formData: FormData) => {
       status: submission.value.status,
       total: submission.value.total,
       note: submission.value.note,
+      customerId: formData.get('customerId') as string
+    },
+    select: {
+      id: true,
+      Customer: true,
+      invoiceNumber: true,
+      date: true,
+      total: true,
+      currency: true
     }
   });
 
@@ -158,7 +168,7 @@ export const updateInvoice = async (prevState: any, formData: FormData) => {
     ],
     template_uuid: "a42bbc9f-1604-4231-bd76-b3fca1f9c813",
     template_variables: {
-      clientName: data.clientName,
+      clientName: data.Customer?.name ?? "",
       invoiceNumber: data.invoiceNumber,
       dueDate: new Intl.DateTimeFormat("en-PH", {
         dateStyle: "long",

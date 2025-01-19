@@ -21,11 +21,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { CalendarIcon } from "lucide-react";
-import { useActionState, useState } from "react";
+import axios from "axios";
+import { useActionState, useEffect, useState } from "react";
 import { createInvoice } from "../action";
 import { formatCurrency } from "../utils/formatCurrency";
 import { invoiceSchema } from "../utils/zodSchemas";
 import { SubmitButtons } from "./SubmitButtons";
+import { Customer } from "@prisma/client";
+import { CustomerCombobox } from "./CustomerCombobox";
 
 interface CreateInvoiceProps {
   userFirstName: string;
@@ -51,6 +54,10 @@ export const CreateInvoice = ({
     shouldValidate: "onBlur",
     shouldRevalidate: "onInput",
   });
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date()
@@ -60,6 +67,19 @@ export const CreateInvoice = ({
   const [currency, setCurrency] = useState("PHP");
 
   const calculateTotal = (Number(rate) || 0) * (Number(quantity) || 0);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const response = await axios.get<Customer[]>("/api/customer");
+      setCustomers(response.data);
+    };
+
+    fetchCustomers();
+  }, []);
+
+  const handleCustomerChange = (customer?: Customer | null) => {
+    setSelectedCustomer(customer ?? null);
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -74,6 +94,11 @@ export const CreateInvoice = ({
             type="hidden"
             name={fields.total.name}
             value={calculateTotal}
+          />
+          <input
+            type="hidden"
+            name={fields.customerId.name}
+            value={selectedCustomer?.id}
           />
           <div className="flex flex-col gap-1 w-fit mb-6">
             <div className="flex items-center gap-4">
@@ -164,33 +189,24 @@ export const CreateInvoice = ({
             <div>
               <Label>To</Label>
               <div className="space-y-2">
-                <Input
-                  name={fields.clientName.name}
-                  key={fields.clientName.key}
-                  defaultValue={fields.clientName.initialValue}
-                  placeholder="Client Name"
+                <CustomerCombobox
+                  data={customers}
+                  onChange={handleCustomerChange}
                 />
                 <p className="text-red-500 text-sm">
-                  {fields.clientName.errors}
+                  {fields.customerId.errors}
                 </p>
                 <Input
-                  name={fields.clientEmail.name}
-                  key={fields.clientEmail.key}
-                  defaultValue={fields.clientEmail.initialValue}
+                  name="email"
+                  defaultValue={selectedCustomer?.email ?? ""}
                   placeholder="Client Email"
                 />
-                <p className="text-red-500 text-sm">
-                  {fields.clientEmail.errors}
-                </p>
+
                 <Input
-                  name={fields.clientAddress.name}
-                  key={fields.clientAddress.key}
-                  defaultValue={fields.clientAddress.initialValue}
+                  name="address"
+                  defaultValue={selectedCustomer?.address ?? ""}
                   placeholder="Client Address"
                 />
-                <p className="text-red-500 text-sm">
-                  {fields.clientAddress.errors}
-                </p>
               </div>
             </div>
           </div>

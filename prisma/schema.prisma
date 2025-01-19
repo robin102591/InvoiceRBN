@@ -99,9 +99,7 @@ model Invoice {
   fromName      String
   fromEmail     String
   fromAddress   String
-  clientName    String
-  clientEmail   String
-  clientAddress String
+  
   currency      String
   invoiceNumber String
   note          String?
