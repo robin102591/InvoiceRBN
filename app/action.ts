@@ -36,6 +36,9 @@ export const onBoardUser = async (prevState: any, formData: FormData) => {
 export const createInvoice = async (prevState: any, formData: FormData) => {
   const session = await requireUser();
 
+  // Parse invoiceItems from formData
+  const rawInvoiceItems = JSON.parse(formData.get("invoiceItems") as string);
+
   const submission = parseWithZod(formData, {
     schema: invoiceSchema,
   });
@@ -43,6 +46,14 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
   if (submission.status !== "success") {
     return submission.reply();
   }
+
+  // Transform `rawInvoiceItems` to match the `InvoiceItem` Prisma schema
+  const invoiceItems = rawInvoiceItems.map((item: any) => ({
+    productId: item.productId,
+    quantity: item.quantity,
+    rate: item.rate,
+    total: item.quantity * item.rate, // Calculate total
+  }));
 
   const data = await prisma.invoice.create({
     data: {
@@ -54,10 +65,6 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
       date: submission.value.date, //string
       dueDate: submission.value.dueDate,
 
-      invoiceItemDescription: submission.value.invoiceItemDescription,
-      invoiceItemQuantity: submission.value.invoiceItemQuantity,
-      invoiceItemRate: submission.value.invoiceItemRate,
-
       invoiceName: submission.value.invoiceName,
       invoiceNumber: submission.value.invoiceNumber,
 
@@ -66,6 +73,9 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
       note: submission.value.note,
       userId: session.user?.id,
       customerId: formData.get('customerId') as string,
+      invoiceItems: {
+        create: invoiceItems
+      }
     },
     select: {
       id: true,
@@ -77,38 +87,41 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
     }
   });
 
-  const sender = {
-    email: "hello@demomailtrap.com",
-    name: "Mailtrap Test",
-  };
+  // const sender = {
+  //   email: "hello@demomailtrap.com",
+  //   name: "Mailtrap Test",
+  // };
 
-  await emailClient.send({
-    from: sender,
-    to: [
-      {
-        email: "robin.nobleza@gmail.com",
-      },
-    ],
-    template_uuid: "087c5343-7f93-4768-9995-9f5175719432",
-    template_variables: {
-      clientName: data.Customer?.name ?? "",
-      invoiceNumber: data.invoiceNumber,
-      dueDate: new Intl.DateTimeFormat("en-PH", {
-        dateStyle: "long",
-      }).format(data.date),
-      totalAmount: formatCurrency({
-        amount: data.total,
-        currency: data.currency as any,
-      }),
-      invoiceLink: `${process.env.BASE_URL}/api/invoice/${data.id}`,
-    },
-  });
+  // await emailClient.send({
+  //   from: sender,
+  //   to: [
+  //     {
+  //       email: "robin.nobleza@gmail.com",
+  //     },
+  //   ],
+  //   template_uuid: "087c5343-7f93-4768-9995-9f5175719432",
+  //   template_variables: {
+  //     clientName: data.Customer?.name ?? "",
+  //     invoiceNumber: data.invoiceNumber,
+  //     dueDate: new Intl.DateTimeFormat("en-PH", {
+  //       dateStyle: "long",
+  //     }).format(data.date),
+  //     totalAmount: formatCurrency({
+  //       amount: data.total,
+  //       currency: data.currency as any,
+  //     }),
+  //     invoiceLink: `${process.env.BASE_URL}/api/invoice/${data.id}`,
+  //   },
+  // });
 
   return redirect("/dashboard/invoices");
 };
 
 export const updateInvoice = async (prevState: any, formData: FormData) => {
   const session = await requireUser();
+  const invoiceId = formData.get("invoiceId") as string;
+  const rawInvoiceItems = JSON.parse(formData.get("invoiceItems") as string);
+  const deletedInvoiceItems = JSON.parse(formData.get("deletedInvoiceItems") as string);
 
   const submission = parseWithZod(formData, {
     schema: invoiceSchema,
@@ -120,7 +133,7 @@ export const updateInvoice = async (prevState: any, formData: FormData) => {
 
   const data = await prisma.invoice.update({
     where: {
-      id: formData.get('id') as string,
+      id: invoiceId,
       userId: session.user?.id
     },
     data: {
@@ -132,9 +145,6 @@ export const updateInvoice = async (prevState: any, formData: FormData) => {
       date: submission.value.date, //string
       dueDate: submission.value.dueDate,
 
-      invoiceItemDescription: submission.value.invoiceItemDescription,
-      invoiceItemQuantity: submission.value.invoiceItemQuantity,
-      invoiceItemRate: submission.value.invoiceItemRate,
 
       invoiceName: submission.value.invoiceName,
       invoiceNumber: submission.value.invoiceNumber,
@@ -153,6 +163,45 @@ export const updateInvoice = async (prevState: any, formData: FormData) => {
       currency: true
     }
   });
+
+  // Delete removed items
+  if (deletedInvoiceItems?.length > 0) {
+    await prisma.invoiceItem.deleteMany({
+      where: {
+        id: { in: deletedInvoiceItems }
+      }
+    })
+  }
+
+  const invoiceItems = rawInvoiceItems.map((item: any) => ({
+    id: item?.id ?? "",
+    productId: item.productId,
+    quantity: item.quantity,
+    rate: item.rate,
+    total: item.quantity * item.rate, // Calculate total
+  }));
+
+  // Upsert invoice items (create or update existing)
+  await Promise.all(
+    invoiceItems.map((item: any) =>
+      prisma.invoiceItem.upsert({
+        where: { id: item.id || "" },
+        create: {
+          productId: item.productId,
+          quantity: item.quantity,
+          rate: item.rate,
+          total: item.total,
+          invoiceId,
+        },
+        update: {
+          productId: item.productId,
+          quantity: item.quantity,
+          rate: item.rate,
+          total: item.total,
+        },
+      })
+    )
+  );
 
   const sender = {
     email: "hello@demomailtrap.com",
@@ -192,7 +241,7 @@ export const deleteInvoice = async (invoiceId: string) => {
     where: {
       id: invoiceId,
       userId: session.user?.id
-    }
+    },
   });
 
   return redirect("/dashboard/invoices");

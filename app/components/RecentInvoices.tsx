@@ -18,8 +18,7 @@ const getData = async (userId: string) => {
     },
     select: {
       id: true,
-      clientName: true,
-      clientEmail: true,
+      Customer: true,
       total: true,
       currency: true,
     },
@@ -45,15 +44,25 @@ export const RecentInvoices = async () => {
         {data.map((invoice) => (
           <div key={invoice.id} className="flex items-center gap-5">
             <Avatar className="hidden sm:block size-9">
-              <AvatarFallback>{invoice.clientName.slice(0,2)}</AvatarFallback>
+              <AvatarFallback>
+                {invoice.Customer?.name.slice(0, 2)}
+              </AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium leading-none">{invoice.clientName}</p>
+              <p className="text-sm font-medium leading-none">
+                {invoice.Customer?.name}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {invoice.clientEmail}
+                {invoice.Customer?.email}
               </p>
             </div>
-            <div className="ml-auto font-medium">+{formatCurrency({amount: invoice.total, currency: invoice.currency as any})}</div>
+            <div className="ml-auto font-medium">
+              +
+              {formatCurrency({
+                amount: invoice.total,
+                currency: invoice.currency as any,
+              })}
+            </div>
           </div>
         ))}
       </CardContent>

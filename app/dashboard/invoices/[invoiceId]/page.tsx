@@ -10,6 +10,25 @@ const getData = async (invoiceId: string, userId: string) => {
       id: invoiceId,
       userId: userId,
     },
+    select: {
+      id: true,
+      invoiceName: true,
+      invoiceNumber: true,
+      currency: true,
+      customerId: true,
+      fromName: true,
+      fromEmail: true,
+      fromAddress: true,
+      dueDate: true,
+      note: true,
+      date: true,
+      invoiceItems: {
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+      total: true,
+    },
   });
 
   return data;

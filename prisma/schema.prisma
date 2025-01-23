@@ -105,9 +105,6 @@ model Invoice {
   note          String?
   invoiceItems  InvoiceItem[] // Relation to invoice items
 
-  invoiceItemDescription String
-  invoiceItemQuantity    Int
-  invoiceItemRate        Int
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -128,12 +125,13 @@ model InvoiceItem {
   rate        Float
   total       Float // Calculated as quantity * rate
   description String? // Optional description for flexibility
-
-  invoiceId String
   productId String
 
-  Invoice Invoice @relation(fields: [invoiceId], references: [id])
-  Product Product @relation(fields: [productId], references: [id])
+  invoiceId String
+  
+
+  Invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  Product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

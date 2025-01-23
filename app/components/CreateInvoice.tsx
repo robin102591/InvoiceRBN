@@ -20,15 +20,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { CalendarIcon } from "lucide-react";
+import { Customer, Product } from "@prisma/client";
 import axios from "axios";
+import { CalendarIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { createInvoice } from "../action";
 import { formatCurrency } from "../utils/formatCurrency";
 import { invoiceSchema } from "../utils/zodSchemas";
-import { SubmitButtons } from "./SubmitButtons";
-import { Customer } from "@prisma/client";
 import { CustomerCombobox } from "./CustomerCombobox";
+import { InvoiceItems } from "./InvoiceItems";
+import { SubmitButtons } from "./SubmitButtons";
+import { InvoiceItem } from "@/types";
 
 interface CreateInvoiceProps {
   userFirstName: string;
@@ -54,7 +56,17 @@ export const CreateInvoice = ({
     shouldValidate: "onBlur",
     shouldRevalidate: "onInput",
   });
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
+    {
+      temp_id: crypto.randomUUID(),
+      productId: "",
+      quantity: 1,
+      rate: 0,
+      subTotal: 0,
+    },
+  ]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
@@ -62,11 +74,10 @@ export const CreateInvoice = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date()
   );
-  const [rate, setRate] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [currency, setCurrency] = useState("PHP");
 
-  const calculateTotal = (Number(rate) || 0) * (Number(quantity) || 0);
+  const [currency, setCurrency] = useState("PHP");
+  const [total, setTotal] = useState(0);
+  const [lineItems, setLineItems] = useState("");
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -74,11 +85,30 @@ export const CreateInvoice = ({
       setCustomers(response.data);
     };
 
+    const fetchProducts = async () => {
+      const response = await axios.get<Product[]>("/api/product");
+      setProducts(response.data);
+    };
+
     fetchCustomers();
+    fetchProducts();
   }, []);
+
+  // Calculate total and synchronize with Conform
+  useEffect(() => {
+    const total = invoiceItems.reduce((sum, item) => sum + item.subTotal, 0);
+    setTotal(total);
+  }, [invoiceItems]);
 
   const handleCustomerChange = (customer?: Customer | null) => {
     setSelectedCustomer(customer ?? null);
+  };
+
+  const handleUpdateItem = (items: InvoiceItem[]) => {
+    const total = items.reduce((sum, item) => sum + item.subTotal, 0);
+    setTotal(total);
+    setInvoiceItems(items);
+    setLineItems(JSON.stringify(items));
   };
 
   return (
@@ -90,16 +120,14 @@ export const CreateInvoice = ({
             name={fields.date.name}
             value={selectedDate?.toISOString()}
           />
-          <input
-            type="hidden"
-            name={fields.total.name}
-            value={calculateTotal}
-          />
+          <input type="hidden" name={fields.total.name} value={total} />
           <input
             type="hidden"
             name={fields.customerId.name}
             value={selectedCustomer?.id}
           />
+          {/* Hidden Field for Invoice Items */}
+          <input type="hidden" name="invoiceItems" value={lineItems} />
           <div className="flex flex-col gap-1 w-fit mb-6">
             <div className="flex items-center gap-4">
               <Badge variant="secondary">Draft</Badge>
@@ -112,7 +140,7 @@ export const CreateInvoice = ({
             </div>
             <p className="text-red-500 text-sm">{fields.invoiceName.errors}</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6">
             <div>
               <Label>Invoice No.</Label>
               <div className="flex">
@@ -265,62 +293,13 @@ export const CreateInvoice = ({
               <p className="text-red-500 text-sm">{fields.dueDate.errors}</p>
             </div>
           </div>
-
           <div>
-            <div className="grid grid-cols-12 gap-4 mb-2 font-medium">
-              <p className="col-span-6">Description</p>
-              <p className="col-span-2">Quantity</p>
-              <p className="col-span-2">Rate</p>
-              <p className="col-span-2">Amount</p>
-            </div>
-            <div className="grid grid-cols-12 gap-4 mb-4">
-              <div className="col-span-6">
-                <Textarea
-                  name={fields.invoiceItemDescription.name}
-                  key={fields.invoiceItemDescription.key}
-                  defaultValue={fields.invoiceItemDescription.initialValue}
-                  placeholder="Item & description"
-                />
-                <p className="text-red-500 text-sm">
-                  {fields.invoiceItemDescription.errors}
-                </p>
-              </div>
-              <div className="col-span-2">
-                <Input
-                  name={fields.invoiceItemQuantity.name}
-                  key={fields.invoiceItemQuantity.key}
-                  placeholder="0"
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
-                <p className="text-red-500 text-sm">
-                  {fields.invoiceItemQuantity.errors}
-                </p>
-              </div>
-              <div className="col-span-2">
-                <Input
-                  name={fields.invoiceItemRate.name}
-                  key={fields.invoiceItemRate.key}
-                  placeholder="0"
-                  type="number"
-                  value={rate}
-                  onChange={(e) => setRate(e.target.value)}
-                />
-                <p className="text-red-500 text-sm">
-                  {fields.invoiceItemRate.errors}
-                </p>
-              </div>
-              <div className="col-span-2">
-                <Input
-                  value={formatCurrency({
-                    amount: calculateTotal,
-                    currency: currency as any,
-                  })}
-                  disabled
-                />
-              </div>
-            </div>
+            <InvoiceItems
+              items={invoiceItems}
+              onChange={handleUpdateItem}
+              products={products}
+            />
+            <p className="text-red-500 text-sm">{fields.total.errors}</p>
           </div>
 
           <div className="flex justify-end">
@@ -329,7 +308,7 @@ export const CreateInvoice = ({
                 <span>SubTotal</span>
                 <span>
                   {formatCurrency({
-                    amount: calculateTotal,
+                    amount: total,
                     currency: currency as any,
                   })}
                 </span>
@@ -338,7 +317,7 @@ export const CreateInvoice = ({
                 <span>Total ({currency})</span>
                 <span className="font-medium underline underline-offset-2">
                   {formatCurrency({
-                    amount: calculateTotal,
+                    amount: total,
                     currency: currency as any,
                   })}
                 </span>

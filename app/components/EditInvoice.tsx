@@ -20,18 +20,21 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { Customer, Prisma } from "@prisma/client";
+import { Customer, Product } from "@prisma/client";
+import axios from "axios";
 import { CalendarIcon } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { updateInvoice } from "../action";
 import { formatCurrency } from "../utils/formatCurrency";
 import { invoiceSchema } from "../utils/zodSchemas";
-import { SubmitButtons } from "./SubmitButtons";
 import { CustomerCombobox } from "./CustomerCombobox";
-import axios from "axios";
+import { SubmitButtons } from "./SubmitButtons";
+
+import { InvoiceData, InvoiceItem } from "@/types";
+import { EditInvoiceItems } from "./EditInvoiceItems";
 
 interface EditInvoiceProps {
-  data: Prisma.InvoiceGetPayload<{}>;
+  data: InvoiceData;
 }
 
 export const EditInvoice = ({ data }: EditInvoiceProps) => {
@@ -47,14 +50,27 @@ export const EditInvoice = ({ data }: EditInvoiceProps) => {
     shouldRevalidate: "onInput",
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(data.date);
-  const [rate, setRate] = useState(data.invoiceItemRate.toString());
-  const [quantity, setQuantity] = useState(data.invoiceItemQuantity.toString());
   const [currency, setCurrency] = useState(data.currency);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
-  const calculateTotal = (Number(rate) || 0) * (Number(quantity) || 0);
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>(
+    data.invoiceItems.map((i) => {
+      return {
+        id: i.id,
+        productId: i.productId,
+        rate: i.rate,
+        quantity: i.quantity,
+        subTotal: i.total,
+      };
+    })
+  );
+  const [deletedInvoiceItems, setDeletedInvoiceItems] = useState<string[]>([]);
+
+  const [total, setTotal] = useState(data.total);
+  const [lineItems, setLineItems] = useState("");
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -62,14 +78,25 @@ export const EditInvoice = ({ data }: EditInvoiceProps) => {
       setCustomers(response.data);
     };
 
+    const fetchProducts = async () => {
+      const response = await axios.get<Product[]>("/api/product");
+      setProducts(response.data);
+    };
+
     fetchCustomers();
+    fetchProducts();
   }, []);
+
+  // Calculate total and synchronize with Conform
+  useEffect(() => {
+    const total = invoiceItems.reduce((sum, item) => sum + item.subTotal, 0);
+    setTotal(total);
+  }, [invoiceItems]);
 
   useEffect(() => {
     if (customers.length > 0) {
       const selected = customers.find((c) => c.id === data.customerId);
       setSelectedCustomer(selected ?? null);
-      console.log(selected);
     }
   }, [customers, data.customerId]); // Runs whenever customers or customerId changes
 
@@ -77,25 +104,46 @@ export const EditInvoice = ({ data }: EditInvoiceProps) => {
     setSelectedCustomer(customer ?? null);
   };
 
+  const handleUpdateItem = (items: InvoiceItem[]) => {
+    const total = items.reduce((sum, item) => sum + item.subTotal, 0);
+    setTotal(total);
+    setInvoiceItems(items);
+    setLineItems(JSON.stringify(items));
+  };
+
+  const handelInvoiceItemRemoved = (invoiceItem: InvoiceItem) => {
+    if (invoiceItem.id) {
+      // add to delete invoice item array
+      setDeletedInvoiceItems([...deletedInvoiceItems, invoiceItem.id]);
+    }
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardContent className="p-6">
         <form action={action} id={form.id} onSubmit={form.onSubmit} noValidate>
-          <input type="hidden" name="id" value={data.id} />
+          <input type="hidden" name="invoiceId" value={data.id} />
           <input
             type="hidden"
             name={fields.date.name}
             value={selectedDate?.toISOString()}
           />
-          <input
-            type="hidden"
-            name={fields.total.name}
-            value={calculateTotal}
-          />
+          <input type="hidden" name={fields.total.name} value={total} />
           <input
             type="hidden"
             name={fields.customerId.name}
             value={selectedCustomer?.id}
+          />
+          {/* Hidden Field for Invoice Items */}
+          <input
+            type="hidden"
+            name="invoiceItems"
+            value={JSON.stringify(invoiceItems)}
+          />
+          <input
+            type="hidden"
+            name="deletedInvoiceItems"
+            value={JSON.stringify(deletedInvoiceItems)}
           />
           <div className="flex flex-col gap-1 w-fit mb-6">
             <div className="flex items-center gap-4">
@@ -263,71 +311,22 @@ export const EditInvoice = ({ data }: EditInvoiceProps) => {
               <p className="text-red-500 text-sm">{fields.dueDate.errors}</p>
             </div>
           </div>
-
           <div>
-            <div className="grid grid-cols-12 gap-4 mb-2 font-medium">
-              <p className="col-span-6">Description</p>
-              <p className="col-span-2">Quantity</p>
-              <p className="col-span-2">Rate</p>
-              <p className="col-span-2">Amount</p>
-            </div>
-            <div className="grid grid-cols-12 gap-4 mb-4">
-              <div className="col-span-6">
-                <Textarea
-                  name={fields.invoiceItemDescription.name}
-                  key={fields.invoiceItemDescription.key}
-                  defaultValue={data.invoiceItemDescription}
-                  placeholder="Item & description"
-                />
-                <p className="text-red-500 text-sm">
-                  {fields.invoiceItemDescription.errors}
-                </p>
-              </div>
-              <div className="col-span-2">
-                <Input
-                  name={fields.invoiceItemQuantity.name}
-                  key={fields.invoiceItemQuantity.key}
-                  placeholder="0"
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
-                <p className="text-red-500 text-sm">
-                  {fields.invoiceItemQuantity.errors}
-                </p>
-              </div>
-              <div className="col-span-2">
-                <Input
-                  name={fields.invoiceItemRate.name}
-                  key={fields.invoiceItemRate.key}
-                  placeholder="0"
-                  type="number"
-                  value={rate}
-                  onChange={(e) => setRate(e.target.value)}
-                />
-                <p className="text-red-500 text-sm">
-                  {fields.invoiceItemRate.errors}
-                </p>
-              </div>
-              <div className="col-span-2">
-                <Input
-                  value={formatCurrency({
-                    amount: calculateTotal,
-                    currency: currency as any,
-                  })}
-                  disabled
-                />
-              </div>
-            </div>
+            <EditInvoiceItems
+              items={invoiceItems}
+              onChange={handleUpdateItem}
+              onItemRemove={handelInvoiceItemRemoved}
+              products={products}
+            />
+            <p className="text-red-500 text-sm">{fields.total.errors}</p>
           </div>
-
           <div className="flex justify-end">
             <div className="w-1/3">
               <div className="flex justify-between py-2">
                 <span>SubTotal</span>
                 <span>
                   {formatCurrency({
-                    amount: calculateTotal,
+                    amount: total,
                     currency: currency as any,
                   })}
                 </span>
@@ -336,7 +335,7 @@ export const EditInvoice = ({ data }: EditInvoiceProps) => {
                 <span>Total ({currency})</span>
                 <span className="font-medium underline underline-offset-2">
                   {formatCurrency({
-                    amount: calculateTotal,
+                    amount: total,
                     currency: currency as any,
                   })}
                 </span>
