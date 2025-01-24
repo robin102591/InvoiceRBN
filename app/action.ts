@@ -86,32 +86,32 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
     }
   });
 
-  // const sender = {
-  //   email: "hello@demomailtrap.com",
-  //   name: "Mailtrap Test",
-  // };
+  const sender = {
+    email: "hello@demomailtrap.com",
+    name: "Mailtrap Test",
+  };
 
-  // await emailClient.send({
-  //   from: sender,
-  //   to: [
-  //     {
-  //       email: "robin.nobleza@gmail.com",
-  //     },
-  //   ],
-  //   template_uuid: "087c5343-7f93-4768-9995-9f5175719432",
-  //   template_variables: {
-  //     clientName: data.Customer?.name ?? "",
-  //     invoiceNumber: data.invoiceNumber,
-  //     dueDate: new Intl.DateTimeFormat("en-PH", {
-  //       dateStyle: "long",
-  //     }).format(data.date),
-  //     totalAmount: formatCurrency({
-  //       amount: data.total,
-  //       currency: data.currency as any,
-  //     }),
-  //     invoiceLink: `${process.env.BASE_URL}/api/invoice/${data.id}`,
-  //   },
-  // });
+  await emailClient.send({
+    from: sender,
+    to: [
+      {
+        email: "robin.nobleza@gmail.com",
+      },
+    ],
+    template_uuid: "087c5343-7f93-4768-9995-9f5175719432",
+    template_variables: {
+      clientName: data.Customer?.name ?? "",
+      invoiceNumber: data.invoiceNumber,
+      dueDate: new Intl.DateTimeFormat("en-PH", {
+        dateStyle: "long",
+      }).format(data.date),
+      totalAmount: formatCurrency({
+        amount: data.total,
+        currency: data.currency as any,
+      }),
+      invoiceLink: `${process.env.BASE_URL}/api/invoice/${data.id}`,
+    },
+  });
 
   return redirect("/dashboard/invoices");
 };
