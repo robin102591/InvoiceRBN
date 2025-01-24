@@ -1,7 +1,6 @@
 
 export type InvoiceData = {
     id: string;
-    invoiceName: string
     invoiceNumber: string
     date: Date;
     currency: string;

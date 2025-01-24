@@ -12,7 +12,6 @@ const getData = async (invoiceId: string, userId: string) => {
     },
     select: {
       id: true,
-      invoiceName: true,
       invoiceNumber: true,
       currency: true,
       customerId: true,

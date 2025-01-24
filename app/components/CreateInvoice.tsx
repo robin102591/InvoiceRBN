@@ -2,7 +2,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -112,7 +118,15 @@ export const CreateInvoice = ({
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full mx-auto">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl font-bold">Invoices Form</CardTitle>
+            <CardDescription>Create your invoice here</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
       <CardContent className="p-6">
         <form action={action} id={form.id} onSubmit={form.onSubmit} noValidate>
           <input
@@ -128,18 +142,6 @@ export const CreateInvoice = ({
           />
           {/* Hidden Field for Invoice Items */}
           <input type="hidden" name="invoiceItems" value={lineItems} />
-          <div className="flex flex-col gap-1 w-fit mb-6">
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary">Draft</Badge>
-              <Input
-                name={fields?.invoiceName?.name}
-                key={fields?.invoiceName?.key}
-                defaultValue={fields.invoiceName.value}
-                placeholder="Test 123"
-              />
-            </div>
-            <p className="text-red-500 text-sm">{fields.invoiceName.errors}</p>
-          </div>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <Label>Invoice No.</Label>
@@ -226,14 +228,16 @@ export const CreateInvoice = ({
                 </p>
                 <Input
                   name="email"
-                  defaultValue={selectedCustomer?.email ?? ""}
+                  value={selectedCustomer?.email ?? ""}
                   placeholder="Client Email"
+                  readOnly
                 />
 
                 <Input
                   name="address"
-                  defaultValue={selectedCustomer?.address ?? ""}
+                  value={selectedCustomer?.address ?? ""}
                   placeholder="Client Address"
+                  readOnly
                 />
               </div>
             </div>

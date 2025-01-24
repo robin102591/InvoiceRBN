@@ -1,11 +1,17 @@
-interface IAppProps{
+interface IAppProps {
   amount: number,
   currency: "USD" | "EUR" | "PHP"
 }
 
-export const formatCurrency = ({amount, currency}: IAppProps) => {
-  return new Intl.NumberFormat("en-PH", {
+export const formatCurrency = ({ amount, currency }: IAppProps) => {
+  const formatted = new Intl.NumberFormat("en-PH", {
     style: "currency",
-    currency: currency,
+    currency,
   }).format(amount);
+
+  if (currency === "PHP") {
+    return formatted.replace("₱", "PHP ");
+  }
+
+  return formatted;
 };

@@ -65,7 +65,6 @@ export const createInvoice = async (prevState: any, formData: FormData) => {
       date: submission.value.date, //string
       dueDate: submission.value.dueDate,
 
-      invoiceName: submission.value.invoiceName,
       invoiceNumber: submission.value.invoiceNumber,
 
       status: submission.value.status,
@@ -140,15 +139,10 @@ export const updateInvoice = async (prevState: any, formData: FormData) => {
       fromName: submission.value.fromName,
       fromEmail: submission.value.fromEmail,
       fromAddress: submission.value.fromAddress,
-
       currency: submission.value.currency,
       date: submission.value.date, //string
       dueDate: submission.value.dueDate,
-
-
-      invoiceName: submission.value.invoiceName,
       invoiceNumber: submission.value.invoiceNumber,
-
       status: submission.value.status,
       total: submission.value.total,
       note: submission.value.note,

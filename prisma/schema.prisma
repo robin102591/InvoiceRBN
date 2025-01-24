@@ -91,7 +91,6 @@ model Authenticator {
 
 model Invoice {
   id            String        @id @default(uuid())
-  invoiceName   String
   total         Int
   status        InvoiceStatus
   date          DateTime

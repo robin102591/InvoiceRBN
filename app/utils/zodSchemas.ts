@@ -6,7 +6,6 @@ export const onboardingSchema = z.object({
 })
 
 export const invoiceSchema = z.object({
-    invoiceName: z.string().min(2, "Invoice Name is required."),
     total: z.number().min(1, "At least one item is required in the invoice"),
     status: z.enum(["PAID", "PENDING"]).default("PENDING"),
     date: z.string().min(1, "Date is required"),
